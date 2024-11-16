@@ -31,8 +31,12 @@
 <body>
     <h1>UTF-8 Normalization Playground</h1>
     <div>
-        <label for="original">Original:</label>
-        <input type="text" id="original" placeholder="Enter text here" value="bẩﬁ">
+        <label for="string">String:</label>
+        <input type="text" id="string" placeholder="Enter text here" value="bẩﬁ">
+    </div>
+    <div>
+        <label for="utf8">UTF-8:</label>
+        <input type="text" id="utf8" placeholder="UTF-8 bytes">
     </div>
     <div>
         <label for="nfc">NFC:</label>
@@ -52,34 +56,33 @@
     </div>
 
     <script>
-        function toHex(str) {
-            return Array.from(str).map(char => '0x' + char.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
+        function stringToUtf8Hex(str) {
+            return Array.from(new TextEncoder().encode(str))
+                .map(byte => byte.toString(16).padStart(2, '0').toUpperCase())
+                .join(' ');
         }
 
-        function fromHex(hex) {
-            return hex.trim().split(/[^0-9a-fA-FxXoO]+/).map(h => {
-                if (h.toLowerCase().startsWith('0x')) {
-                    return String.fromCharCode(parseInt(h.slice(2), 16));
-                } else if (h.toLowerCase().startsWith('0o')) {
-                    return String.fromCharCode(parseInt(h.slice(2), 8));
-                } else {
-                    return String.fromCharCode(parseInt(h, 10));
-                }
-            }).join('');
+        function utf8HexToString(hex) {
+            const bytes = hex.trim().split(/\s+/).map(byte => parseInt(byte, 16));
+            return new TextDecoder().decode(new Uint8Array(bytes));
         }
 
         function updateFields(source) {
-            const fields = ['original', 'nfd', 'nfc', 'nfkd', 'nfkc'];
+            const fields = ['string', 'utf8', 'nfd', 'nfc', 'nfkd', 'nfkc'];
+            // Get the value of the source field
             const sourceValue = document.getElementById(source).value;
-            const sourceText = source === 'original' ? sourceValue : fromHex(sourceValue);
+            let sourceText;
 
+            if (source === 'string') {
+                sourceText = sourceValue;
+            } else {
+                sourceText = utf8HexToString(sourceValue);
+            }
+            // Set the value to the other fields
             fields.forEach(field => {
                 if (field !== source) {
                     let normalizedText;
                     switch (field) {
-                        case 'original':
-                            normalizedText = sourceText;
-                            break;
                         case 'nfd':
                             normalizedText = sourceText.normalize('NFD');
                             break;
@@ -92,11 +95,14 @@
                         case 'nfkc':
                             normalizedText = sourceText.normalize('NFKC');
                             break;
+                        default:
+                            normalizedText = sourceText;
                     }
-                    document.getElementById(field).value = field === 'original' ? normalizedText : toHex(normalizedText);
+                    document.getElementById(field).value = field === 'string' ? normalizedText : stringToUtf8Hex(normalizedText);
                 }
             });
         }
+
 
         document.querySelectorAll('input').forEach(input => {
             input.addEventListener('input', function () {
@@ -104,7 +110,7 @@
             });
         });
 
-        updateFields('original');
+        updateFields('string');
     </script>
 </body>
 
