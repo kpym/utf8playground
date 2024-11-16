@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UTF-8 Normalization Playground</title>
+    <style>
+        body {
+            font-family: Ubuntu, Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        label {
+            display: inline-block;
+            width: 5rem;
+            margin-bottom: 10px;
+        }
+
+        input {
+            width: 42rem;
+            padding: 5px;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>UTF-8 Normalization Playground</h1>
+    <div>
+        <label for="original">Original:</label>
+        <input type="text" id="original" placeholder="Enter text here" value="bẩﬁ">
+    </div>
+    <div>
+        <label for="nfc">NFC:</label>
+        <input type="text" id="nfc">
+    </div>
+    <div>
+        <label for="nfd">NFD:</label>
+        <input type="text" id="nfd">
+    </div>
+    <div>
+        <label for="nfkc">NFKC:</label>
+        <input type="text" id="nfkc">
+    </div>
+    <div>
+        <label for="nfkd">NFKD:</label>
+        <input type="text" id="nfkd">
+    </div>
+
+    <script>
+        function toHex(str) {
+            return Array.from(str).map(char => '0x' + char.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
+        }
+
+        function fromHex(hex) {
+            return hex.trim().split(/[^0-9a-fA-FxXoO]+/).map(h => {
+                if (h.toLowerCase().startsWith('0x')) {
+                    return String.fromCharCode(parseInt(h.slice(2), 16));
+                } else if (h.toLowerCase().startsWith('0o')) {
+                    return String.fromCharCode(parseInt(h.slice(2), 8));
+                } else {
+                    return String.fromCharCode(parseInt(h, 10));
+                }
+            }).join('');
+        }
+
+        function updateFields(source) {
+            const fields = ['original', 'nfd', 'nfc', 'nfkd', 'nfkc'];
+            const sourceValue = document.getElementById(source).value;
+            const sourceText = source === 'original' ? sourceValue : fromHex(sourceValue);
+
+            fields.forEach(field => {
+                if (field !== source) {
+                    let normalizedText;
+                    switch (field) {
+                        case 'original':
+                            normalizedText = sourceText;
+                            break;
+                        case 'nfd':
+                            normalizedText = sourceText.normalize('NFD');
+                            break;
+                        case 'nfc':
+                            normalizedText = sourceText.normalize('NFC');
+                            break;
+                        case 'nfkd':
+                            normalizedText = sourceText.normalize('NFKD');
+                            break;
+                        case 'nfkc':
+                            normalizedText = sourceText.normalize('NFKC');
+                            break;
+                    }
+                    document.getElementById(field).value = field === 'original' ? normalizedText : toHex(normalizedText);
+                }
+            });
+        }
+
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', function () {
+                updateFields(this.id);
+            });
+        });
+
+        updateFields('original');
+    </script>
+</body>
+
+</html>
